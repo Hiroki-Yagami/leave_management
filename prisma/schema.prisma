@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id        String   @id @default(cuid())
+  name      String
+  hireDate  DateTime
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leaveGrants     LeaveGrant[]
+  leaveRequests   LeaveRequest[]
+  leaveOfAbsences LeaveOfAbsence[]
+}
+
+model LeaveGrant {
+  id             String   @id @default(cuid())
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id])
+  grantDate      DateTime // Date when leave was granted
+  daysGranted    Float    // Number of days granted (e.g., 10, 11, 12...)
+  expirationDate DateTime // Typically 2 years after grantDate
+  createdAt      DateTime @default(now())
+}
+
+model LeaveRequest {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  date       DateTime // Date of leave
+  status     String   // PENDING, APPROVED, REJECTED
+  reason     String?
+  createdAt  DateTime @default(now())
+}
+
+model LeaveOfAbsence {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  reason     String?
+  createdAt  DateTime @default(now())
+}
