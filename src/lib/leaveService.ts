@@ -68,7 +68,12 @@ export async function calculateAndGrantLeave(employeeId: string) {
     employee.leaveOfAbsences
   );
   
-  const grantsToCreate = [];
+  const grantsToCreate: Array<{
+    employeeId: string;
+    grantDate: Date;
+    daysGranted: number;
+    expirationDate: Date;
+  }> = [];
 
   // First grant: 6 months = 10 days
   if (monthsEmployed >= 6) {
