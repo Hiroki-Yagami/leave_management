@@ -1,37 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Paid Leave Management System (有給管理システム)
 
-## Getting Started
+日本の労働基準法に準拠した有給休暇管理システム
 
-First, run the development server:
+## 機能
+
+- ✅ 従業員管理（CRUD）
+- ✅ 有給付与の自動計算（6ヶ月後10日、その後1年ごとに1日追加）
+- ✅ 時効管理（付与から2年で消滅）
+- ✅ 有給取得記録
+- ✅ 休職期間管理（勤続年数から除外）
+- ✅ 時効警告（30日前から表示）
+
+## 技術スタック
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL (Vercel Postgres)
+- **ORM**: Prisma
+- **UI**: Tailwind CSS
+
+## ローカル開発
+
+### 前提条件
+
+- Node.js 20以上
+- PostgreSQL（またはSQLite for local dev）
+
+### セットアップ
 
 ```bash
+# 依存関係のインストール
+npm install
+
+# 環境変数の設定
+cp .env.example .env
+# .envファイルを編集してDATABASE_URLを設定
+
+# データベースマイグレーション
+npx prisma migrate dev
+
+# 開発サーバーの起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+http://localhost:3000 でアクセス
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Vercelへのデプロイ
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+詳細は [Vercelデプロイガイド](./VERCEL_DEPLOYMENT.md) を参照
 
-## Learn More
+### クイックスタート
 
-To learn more about Next.js, take a look at the following resources:
+1. Vercelにログイン: https://vercel.com
+2. GitHubリポジトリをインポート
+3. Vercel Postgresデータベースを作成
+4. デプロイ
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## データベーススキーマ
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Employee**: 従業員情報
+- **LeaveGrant**: 有給付与履歴
+- **LeaveRequest**: 有給取得記録
+- **LeaveOfAbsence**: 休職期間
 
-## Deploy on Vercel
+## ライセンス
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# -
+MIT
