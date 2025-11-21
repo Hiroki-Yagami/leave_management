@@ -1,180 +1,222 @@
+// 'use client'はNext.jsのApp Routerで、このコンポーネントがブラウザ側で動作することを示します
+// サーバー側ではなく、クライアント側でReactの機能（useState, useEffectなど）を使えるようにします
 'use client';
 
+// Reactのフック（Hook）をインポート
+// useState: 状態（データ）を管理するためのフック
+// useEffect: コンポーネントが表示された時に処理を実行するフック
 import { useState, useEffect } from 'react';
 import { getDetailedLeaveStatus } from '@/lib/leaveService';
 
+// TypeScript の型定義
+// 従業員のデータ構造を定義（どんな情報を持っているか）
 type Employee = {
-  id: string;
-  name: string;
-  hireDate: string;
-  email: string | null;
-  remaining: number;
-  totalGranted: number;
-  totalUsed: number;
+  id: string;              // 従業員ID（一意の識別子）
+  name: string;            // 名前
+  hireDate: string;        // 入社日
+  email: string | null;    // メールアドレス（nullの場合もある）
+  remaining: number;       // 残りの有給日数
+  totalGranted: number;    // 付与された合計日数
+  totalUsed: number;       // 使用した合計日数
 };
 
+// 有給付与のデータ構造
 type Grant = {
   id: string;
-  grantDate: string;
-  daysGranted: number;
-  expirationDate: string;
-  isExpired: boolean;
-  daysUntilExpiration: number;
-  isExpiringSoon: boolean;
+  grantDate: string;           // 付与日
+  daysGranted: number;         // 付与日数
+  expirationDate: string;      // 時効日（2年後）
+  isExpired: boolean;          // 期限切れかどうか
+  daysUntilExpiration: number; // 時効まであと何日か
+  isExpiringSoon: boolean;     // もうすぐ時効か（30日以内）
 };
 
+// 有給取得記録のデータ構造
 type LeaveRequest = {
   id: string;
-  date: string;
-  status: string;
-  reason: string | null;
+  date: string;           // 取得日
+  status: string;         // ステータス（APPROVED = 承認済み）
+  reason: string | null;  // 理由
 };
 
+// 休職期間のデータ構造
 type LeaveOfAbsence = {
   id: string;
-  startDate: string;
-  endDate: string;
+  startDate: string;  // 開始日
+  endDate: string;    // 終了日
   reason: string | null;
 };
 
+// メインのコンポーネント（画面全体を表示する関数）
 export default function Home() {
+  // === 状態管理（useState） ===
+  // useStateは値を保存して、値が変わったら画面を自動的に更新してくれる
+  
+  // 従業員リストの状態（最初は空の配列[]）
   const [employees, setEmployees] = useState<Employee[]>([]);
+  
+  // ローディング中かどうか（最初はtrue = 読み込み中）
   const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState('');
-  const [newHireDate, setNewHireDate] = useState('');
-  const [newEmail, setNewEmail] = useState('');
   
-  // Modal states
-  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  // 新規従業員登録フォームの入力値
+  const [newName, setNewName] = useState('');          // 名前
+  const [newHireDate, setNewHireDate] = useState('');  // 入社日
+  const [newEmail, setNewEmail] = useState('');        // メール
   
-  // Detail modal data
+  // モーダル（ポップアップウィンドウ）の表示状態
+  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null); // 選択中の従業員ID
+  const [showDetailModal, setShowDetailModal] = useState(false);  // 詳細モーダルを表示するか
+  const [showEditModal, setShowEditModal] = useState(false);      // 編集モーダルを表示するか
+  const [showLeaveModal, setShowLeaveModal] = useState(false);    // 有給取得モーダルを表示するか
+  
+  // 詳細モーダルに表示するデータ
   const [detailData, setDetailData] = useState<{
-    grants: Grant[];
-    leaveRequests: LeaveRequest[];
-    expiringGrants: Grant[];
+    grants: Grant[];                // 付与履歴
+    leaveRequests: LeaveRequest[];  // 取得履歴
+    expiringGrants: Grant[];        // もうすぐ時効になる付与
   } | null>(null);
   
-  // Edit form
+  // 編集フォームの入力値
   const [editName, setEditName] = useState('');
   const [editHireDate, setEditHireDate] = useState('');
   const [editEmail, setEditEmail] = useState('');
   
-  // Leave form
+  // 有給取得フォームの入力値
   const [leaveDate, setLeaveDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
   
-  // Leave of absence modal
+  // 休職期間モーダルの状態
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [absenceStartDate, setAbsenceStartDate] = useState('');
   const [absenceEndDate, setAbsenceEndDate] = useState('');
   const [absenceReason, setAbsenceReason] = useState('');
   const [leaveOfAbsences, setLeaveOfAbsences] = useState<LeaveOfAbsence[]>([]);
 
+  // === 関数定義 ===
+  
+  // サーバーから従業員リストを取得する関数（async = 非同期処理）
   const fetchEmployees = async () => {
-    setLoading(true);
+    setLoading(true);  // ローディング開始
     try {
+      // APIを呼び出してデータを取得
       const res = await fetch('/api/employees');
-      const data = await res.json();
-      setEmployees(data);
+      const data = await res.json();  // JSONデータに変換
+      setEmployees(data);  // 状態を更新（画面が自動的に再描画される）
     } catch (error) {
+      // エラーが発生した場合
       console.error('Failed to fetch employees', error);
     } finally {
-      setLoading(false);
+      // 成功・失敗に関わらず最後に実行
+      setLoading(false);  // ローディング終了
     }
   };
 
+  // useEffect: コンポーネントが最初に表示された時に1回だけ実行される
+  // []は「依存配列」で、空の場合は初回のみ実行
   useEffect(() => {
-    fetchEmployees();
+    fetchEmployees();  // 従業員リストを取得
   }, []);
 
+  // 新しい従業員を追加する関数
+  // e: React.FormEvent はフォーム送信イベント
   const handleAddEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault();  // フォームのデフォルト動作（ページリロード）を防ぐ
     try {
+      // POSTメソッドでAPIにデータを送信
       await fetch('/api/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName, hireDate: newHireDate, email: newEmail }),
+        method: 'POST',  // 新規作成はPOSTメソッド
+        headers: { 'Content-Type': 'application/json' },  // JSON形式で送信
+        body: JSON.stringify({ name: newName, hireDate: newHireDate, email: newEmail }),  // データをJSON文字列に変換
       });
+      // 入力フォームをクリア
       setNewName('');
       setNewHireDate('');
       setNewEmail('');
-      fetchEmployees();
+      fetchEmployees();  // リストを再取得して画面を更新
     } catch (error) {
       console.error('Failed to add employee', error);
     }
   };
 
+  // 有給付与を再計算する関数（「再計算」ボタンを押した時）
   const handleGrantCheck = async (id: string) => {
     try {
       await fetch(`/api/employees/${id}/grant`, { method: 'POST' });
-      fetchEmployees();
+      fetchEmployees();  // リストを更新
     } catch (error) {
       console.error('Failed to check grants', error);
     }
   };
 
+  // 従業員の詳細情報を表示する関数（「詳細」ボタンを押した時）
   const handleShowDetail = async (id: string) => {
     try {
       const res = await fetch(`/api/employees/${id}`);
       const data = await res.json();
+      // 詳細モーダルに表示するデータをセット
       setDetailData({
-        grants: data.grants || [],
-        leaveRequests: data.leaveRequests || [],
-        expiringGrants: data.expiringGrants || []
+        grants: data.grants || [],              // 付与履歴
+        leaveRequests: data.leaveRequests || [], // 取得履歴
+        expiringGrants: data.expiringGrants || [] // もうすぐ時効になる付与
       });
-      setSelectedEmployee(id);
-      setShowDetailModal(true);
+      setSelectedEmployee(id);  // 選択中の従業員IDを保存
+      setShowDetailModal(true);  // 詳細モーダルを表示
     } catch (error) {
       console.error('Failed to fetch details', error);
     }
   };
 
+  // 従業員情報を編集する関数（「編集」ボタンを押した時）
   const handleEdit = (emp: Employee) => {
     setSelectedEmployee(emp.id);
+    // 現在の値を編集フォームにセット
     setEditName(emp.name);
-    setEditHireDate(emp.hireDate.split('T')[0]);
+    setEditHireDate(emp.hireDate.split('T')[0]);  // 日付部分のみ取得
     setEditEmail(emp.email || '');
-    setShowEditModal(true);
+    setShowEditModal(true);  // 編集モーダルを表示
   };
 
+  // 編集内容を保存する関数
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedEmployee) return;
+    if (!selectedEmployee) return;  // 従業員が選択されていない場合は何もしない
     
     try {
+      // PUTメソッドでデータを更新
       await fetch(`/api/employees/${selectedEmployee}`, {
-        method: 'PUT',
+        method: 'PUT',  // 更新はPUTメソッド
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editName, hireDate: editHireDate, email: editEmail }),
       });
-      setShowEditModal(false);
-      fetchEmployees();
+      setShowEditModal(false);  // モーダルを閉じる
+      fetchEmployees();  // リストを更新
     } catch (error) {
       console.error('Failed to update employee', error);
     }
   };
 
+  // 従業員を削除する関数（「削除」ボタンを押した時）
   const handleDelete = async (id: string, name: string) => {
+    // 確認ダイアログを表示（ユーザーが「OK」を押した場合のみ削除）
     if (!confirm(`本当に ${name} を削除しますか？`)) return;
     
     try {
-      await fetch(`/api/employees/${id}`, { method: 'DELETE' });
-      fetchEmployees();
+      await fetch(`/api/employees/${id}`, { method: 'DELETE' });  // DELETEメソッドで削除
+      fetchEmployees();  // リストを更新
     } catch (error) {
       console.error('Failed to delete employee', error);
     }
   };
 
+  // 有給取得モーダルを開く関数（「取得」ボタンを押した時）
   const handleTakeLeave = (id: string) => {
     setSelectedEmployee(id);
     setLeaveDate('');
     setLeaveReason('');
-    setShowLeaveModal(true);
+    setShowLeaveModal(true);  // 有給取得モーダルを表示
   };
 
+  // 有給取得を記録する関数
   const handleSaveLeave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEmployee) return;
@@ -185,10 +227,10 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId: selectedEmployee, date: leaveDate, reason: leaveReason }),
       });
-      setShowLeaveModal(false);
-      fetchEmployees();
+      setShowLeaveModal(false);  // モーダルを閉じる
+      fetchEmployees();  // リストを更新
       
-      // Refresh detail modal if it's open
+      // 詳細モーダルが開いている場合は、そちらも更新
       if (showDetailModal) {
         await handleShowDetail(selectedEmployee);
       }
