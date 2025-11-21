@@ -229,6 +229,7 @@ export async function getDetailedLeaveStatus(employeeId: string) {
 
   return {
     grants: grantsWithStatus,
+    leaveRequests: employee.leaveRequests,
     totalGranted,
     totalUsed,
     remaining: totalGranted - totalUsed,
