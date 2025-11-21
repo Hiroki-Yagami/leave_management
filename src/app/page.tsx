@@ -187,6 +187,11 @@ export default function Home() {
       });
       setShowLeaveModal(false);
       fetchEmployees();
+      
+      // Refresh detail modal if it's open
+      if (showDetailModal) {
+        await handleShowDetail(selectedEmployee);
+      }
     } catch (error) {
       console.error('Failed to record leave', error);
     }
